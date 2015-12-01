@@ -1,6 +1,6 @@
 <?php
 /**
- * Hello Model for Hello World Component
+ * Ballotboxapp Model for BallotBoxApp Component
  *
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -14,7 +14,7 @@ defined('_JEXEC') or die( 'Restricted access' );
 jimport('joomla.application.component.model');
 
 /**
- * Hello Hello Model
+ * Ballotboxapps Ballotboxapp Model
  *
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -36,10 +36,10 @@ class BallotboxappsModelBallotboxapp extends JModel
     }
 
     /**
-     * Method to set the hello identifier
+     * Method to set the Ballotboxapp identifier
      *
      * @access  public
-     * @param   int Hello identifier
+     * @param   int Ballotboxapp identifier
      * @return  void
      */
     public function setId($id)
@@ -50,7 +50,7 @@ class BallotboxappsModelBallotboxapp extends JModel
     }
 
     /**
-     * Method to get a hello
+     * Method to get a Ballotboxapp
      * @return object with data
      */
     public function &getData()
@@ -88,13 +88,13 @@ class BallotboxappsModelBallotboxapp extends JModel
 
         $data = JRequest::get('post');
 
-        // Bind the form fields to the hello table
+        // Bind the form fields to the  table
         if (!$row->bind($data)) {
             $this->setError($this->_db->getErrorMsg());
             return false;
         }
 
-        // Make sure the hello record is valid
+        // Make sure the  record is valid
         if (!$row->check()) {
             $this->setError($this->_db->getErrorMsg());
             return false;

@@ -1,6 +1,6 @@
 <?php
 /**
- * Hello Model for Hello World Component
+ * Office Model for BallotBoxApp Component
  * 
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -14,7 +14,7 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
 jimport('joomla.application.component.model');
 
 /**
- * Hello Hello Model
+ * Ballotboxapps Office Model
  *
  * @package    Joomla.Tutorials
  * @subpackage Components

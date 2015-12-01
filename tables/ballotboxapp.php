@@ -1,6 +1,6 @@
 <?php
 /**
- * Hello World table class
+ * BallotBoxApp table class
  * 
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -12,7 +12,7 @@
 defined( '_JEXEC' ) or die( 'Restricted access' );
 
 /**
- * Hello Table class
+ * Ballotboxapp Table class
  *
  * @package    Joomla.Tutorials
  * @subpackage Components

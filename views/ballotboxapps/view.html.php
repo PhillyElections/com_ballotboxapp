@@ -1,6 +1,6 @@
 <?php
 /**
- * Hellos View for Hello World Component
+ * Ballotboxapps View for BallotBoxApp Component
  * 
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -14,7 +14,7 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
 jimport( 'joomla.application.component.view' );
 
 /**
- * Hellos View
+ * Ballotboxapps View
  *
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -23,7 +23,7 @@ class BallotboxappsViewBallotboxapps extends JView
 {
 	
 	/**
-	 * Hellos view display method
+	 * Ballotboxapps view display method
 	 * @return void
 	 **/
 	function display($tpl = null)

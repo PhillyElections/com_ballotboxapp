@@ -1,6 +1,6 @@
 <?php
 /**
- * Hello World default controller
+ * BallotBoxApp default controller
  * 
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -14,7 +14,7 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
 jimport('joomla.application.component.controller');
 
 /**
- * Hello World Component Controller
+ * BallotBoxApp Component Controller
  *
  * @package    Joomla.Tutorials
  * @subpackage Components

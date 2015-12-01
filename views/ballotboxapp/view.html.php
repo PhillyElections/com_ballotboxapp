@@ -1,6 +1,6 @@
 <?php
 /**
- * Hello View for Hello World Component
+ * Ballotboxapp View for BallotBoxApp Component
  * 
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -14,7 +14,7 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
 jimport( 'joomla.application.component.view' );
 
 /**
- * Hello View
+ * Ballotboxapp View
  *
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -22,14 +22,14 @@ jimport( 'joomla.application.component.view' );
 class BallotboxappsViewBallotboxapp extends JView
 {
 	/**
-	 * display method of Hello view
+	 * display method of Ballotboxapp view
 	 * @return void ballotbox
 	 **/
 	function display($tpl = null)
 	{
 
 		//get the election
-		$election		=& $this->get('Data');//echo "<pre>";print_r($hello[0]->id);die;
+		$election		=& $this->get('Data');
 		$isNew		= ($election[0][0]->id < 1);
 
 		$text = $isNew ? JText::_( 'New' ) : JText::_( 'Edit' );

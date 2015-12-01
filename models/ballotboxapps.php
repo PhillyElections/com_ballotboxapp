@@ -1,6 +1,6 @@
 <?php
 /**
- * Hellos Model for Hello World Component
+ * Ballotboxapps Model for BallotBoxApp Component
  *
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -14,7 +14,7 @@ defined('_JEXEC') or die( 'Restricted access' );
 jimport('joomla.application.component.model');
 
 /**
- * Hello Model
+ * Ballotboxapps Model
  *
  * @package    Joomla.Tutorials
  * @subpackage Components
@@ -22,7 +22,7 @@ jimport('joomla.application.component.model');
 class BallotboxappsModelBallotboxapps extends JModel
 {
     /**
-     * Hellos data array
+     * Ballotboxapps data array
      *
      * @var array
      */
@@ -41,7 +41,7 @@ class BallotboxappsModelBallotboxapps extends JModel
     }
 
     /**
-     * Retrieves the hello data
+     * Retrieves the Ballotboxapps data
      * @return array Array of objects containing the data from the database
      */
     public function getData()

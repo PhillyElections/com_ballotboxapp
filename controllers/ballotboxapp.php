@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Hello Controller for Hello World Component.
+ * Ballotboxapp Controller for BallotBoxApp Component.
  *
  * @link http://docs.joomla.org/Developing_a_Model-View-Controller_Component_-_Part_4
  *
@@ -13,7 +13,7 @@ defined('_JEXEC') or die('Restricted access');
 jimport('kint.kint');
 jimport('joomla.filesystem.archive');
 /**
- * Hello Hello Controller.
+ * Ballotboxapps Ballotboxapp Controller.
  */
 class BallotboxappsControllerBallotboxapp extends BallotboxappsController
 {
