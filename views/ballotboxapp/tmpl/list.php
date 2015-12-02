@@ -61,6 +61,7 @@ jimport( 'joomla.html.html' );
 			</td>
 			<td>
 				<?=html_entity_decode($row->name , ENT_QUOTES); ?>
+				<input type="hidden" name="office_publish[<?=$row->id ;?>]" value="<?=$row->published; ?>" />
 				<input type="hidden" name="office_id[<?=$row->id ;?>]" value="<?=$row->id; ?>" />
 				<input type="hidden" name="office_name[<?=$row->id ;?>]" value="<?=html_entity_decode($row->name , ENT_QUOTES); ?>" />
 			</td>
