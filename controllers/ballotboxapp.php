@@ -10,7 +10,7 @@
 
 // No direct access
 defined('_JEXEC') or die('Restricted access');
-jimport('kint.kint');
+
 jimport('joomla.filesystem.archive');
 /**
  * Ballotboxapps Ballotboxapp Controller.
