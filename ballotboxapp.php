@@ -8,6 +8,11 @@
 
 // No direct access
 defined( '_JEXEC' ) or die( 'Restricted access' );
+
+// Uzer
+jimport('uzer.Uzer');
+Uzer::blok(JFactory::getUser(), 'Administrator');
+
 jimport('kint.kint');
 // Require the base controller
 
