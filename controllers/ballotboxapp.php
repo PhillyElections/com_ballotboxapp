@@ -114,9 +114,11 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
         $model          = $this->getModel('ballotboxapp');
         $insertStart    = 'INSERT into #__rt_cold_data (`office`,`ward`,`division`,`vote_type`,`name`,`party`,`votes`,`e_year`,`date_created`) VALUES ';
 
-        $path       = JPATH_COMPONENT . DS . 'uploads' . DS;
-        $fileName   = $files['fileToUpload']['name'];
-        $fileTmpLoc = $files['fileToUpload']['tmp_name'];
+        $oldFileName = $files['results_file']['name'];
+
+        $uploads = JPATH_COMPONENT . DS . 'uploads';
+        $src     = $files['results_file']['tmp_name'];
+        $dest    = $uploads . DS . $oldFileName;
 
         // Path and file name
         $pathAndName = $path . $fileName;
@@ -124,16 +126,26 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
         $moveResult = move_uploaded_file($fileTmpLoc, $pathAndName);
         // Evaluate the value returned from the function if needed
         if ($moveResult) {
-            $path_parts = pathinfo($pathAndName);
+            $path_parts = pathinfo($dest);
             // if this is one of the extensions JArchive handles, lets extract it
             if (in_array($path_parts['extension'], array('zip', 'tar', 'tgz', 'gz', 'gzip', 'bz2', 'bzip2', 'tbz2'))) {
+                // we have an archive.  pull in JArchive to handle it
+                jimport('joomla.filesystem.archive');
+
                 // when unzipping a 50MB text file, you take up a crapload of memory
-                ini_set('memory_limit', '200M');
-                JArchive::extract($pathAndName, $path_parts['dirname']);
+                $extracted = JArchive::extract($dest, $path_parts['dirname']);
                 // drop the archive now
-                @unlink($pathAndName);
+                //@unlink($dest);
                 // reset the filename
-                $pathAndName = $path . $path_parts['filename'] . ".txt";
+                $dest = $uploads . DS . strtolower($path_parts['filename']);
+
+                if ($path_parts['extension'] === 'zip') {
+                    $dest = $uploads . DS . $path_parts['filename'] . ".txt";
+                }
+
+                jimport('joomla.fiesystem.file');
+                JFile::move($dest, $uploads . DS . "jos_pv_live_imports.txt");
+                $dest = $uploads . DS . "jos_pv_live_imports.txt";
             }
 
             $insert    = '';
