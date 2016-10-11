@@ -23,7 +23,7 @@
 				</label>
 			</td>
 			<td>
-				<input class="text_area" type="checkbox" name="header" value="Include" checked=checked> <sup>1</sup>
+				<input class="text_area" type="checkbox" name="header" value="Exclude" > <sup>1</sup>
 			</td>
 		</tr>
 		<tr>
