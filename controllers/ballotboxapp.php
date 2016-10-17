@@ -103,6 +103,7 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
         JRequest::checkToken() or jexit('Invalid Token');
 
         jimport('kint.kint');
+
         $t=array();
         array_push($t, array('msg'=>'start', 'time'=>microtime(1)));
 
@@ -167,7 +168,7 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
 
         // default
         // 7 column import
-        // [0]ward    [1]division    [2]type    [3]office  [4]candidate   [5]party   [6]votes
+        // [0]ward    [1]division    [2]type    [3]office  [4]name   [5]party   [6]votes
         $delim = ',';
 
         $line = fgets($inputFile);
@@ -189,18 +190,18 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
             // $ignore = "    IGNORE 1 LINES \n";
         }
 
-        $coldDataFields = " `ward`, `division`, `vote_type`, `office`, `candidate`, `party`, `votes` ";
-        $inputFields = " `ward`, `division`, `type`, `office`, `candidate`, `party`, `votes` ";
-        $outputHeader = array('ward', 'division', 'type', 'office', 'candidate', 'party', 'votes');
+        $coldDataFields = " `ward`, `division`, `vote_type`, `office`, `name`, `party`, `votes`, `e_year`, `date_created` ";
+        $inputFields = " `ward`, `division`, `type`, `office`, `name`, `party`, `votes` ";
+        $outputHeader = array('ward', 'division', 'type', 'office', 'name', 'party', 'votes');
 
         switch ($delim) {
             case "@":
-                $sFields = "ward_division,office,candidate,votes,lname,fname,mname,party";
-                $fields  = " (ward_division, office, candidate, votes, lname, fname, mname, party) ";
+                $sFields = "ward_division,office,name,votes,lname,fname,mname,party";
+                $fields  = " (ward_division, office, name, votes, lname, fname, mname, party) ";
                 break;
             default:
-                $sFields = "ward,division,type,office,candidate,party,votes";
-                $fields  = " (ward, division, type, office, candidate, party, votes) ";
+                $sFields = "ward,division,type,office,name,party,votes";
+                $fields  = " (ward, division, type, office, name, party, votes) ";
                 break;
         }
 
@@ -239,7 +240,7 @@ CREATE TABLE IF NOT EXISTS `#__rt_imports` (
 , `division` smallint(5) NOT NULL
 , `type` char(1) NOT NULL
 , `office` varchar(255) NOT NULL
-, `candidate` varchar(255) NOT NULL
+, `name` varchar(255) NOT NULL
 , `party` varchar(255) NOT NULL
 , `votes` int(11) NOT NULL
 , `ward_division` varchar(255) NOT NULL
@@ -250,11 +251,11 @@ CREATE TABLE IF NOT EXISTS `#__rt_imports` (
 , INDEX `ward_imports` (`ward`)
 , INDEX `division_imports` (`division`)
 , INDEX `ward_division_imports` (`ward`,`division`)
-, INDEX `candidate_imports` (`candidate`)
+, INDEX `name_imports` (`name`)
 , INDEX `office_imports` (`office`)
 , INDEX `party_imports` (`party`)
 , INDEX `votes_imports` (`votes`)
-) ENGINE=MYSQL COLLATE='utf8_general_ci';
+) ENGINE=MYISAM COLLATE='utf8_general_ci';
 _CREATE;
 
         $db->setQuery($create);
@@ -292,93 +293,67 @@ _IMPORT;
 
         // index altogether
         $index = <<<_INDEX
-"ALTER TABLE `#_rt_imports` ENABLE KEYS"
+ALTER TABLE `#_rt_imports` ENABLE KEYS
 _INDEX;
-
-        array_push($t, array('msg'=>'file imported', 'time'=>microtime(1)));
 
         $db->setQuery($index);
         $db->query();
+
+        array_push($t, array('msg'=>'file imported', 'time'=>microtime(1)));
 
         // transform data if needed here
         if ($delim === "@") {
             // missing fields: ward, division, type
             $db->setQuery("UPDATE `#__rt_imports` SET `type` = 'M', `ward` = LEFT(`ward_division`, 2), `division` = RIGHT(`ward_division`, 2)");
             $db->query();
-            // improve our candidates where possible
-            $db->setQuery("UPDATE `#__rt_imports` SET `candidate` = REPLACE(CONCAT_WS(' ', `fname`, `mname`, `lname`), '  ', ' ') WHERE `lname` IS NOT NULL AND `lname` != '' ");
+            // improve our names where possible
+            $db->setQuery("UPDATE `#__rt_imports` SET `name` = REPLACE(CONCAT_WS(' ', TRIM(`fname`), TRIM(`mname`), TRIM(`lname`)), '  ', ' ') WHERE `lname` IS NOT NULL AND `lname` != '' ");
             $db->query();
-
-            array_push($t, array('msg'=>'file transformed', 'time'=>microtime(1)));
         }
+
+        // we have the target fields, but they may contain some garbage
+        $db->setQuery("UPDATE `#__rt_imports` SET `name` = REPLACE(REPLACE(TRIM(`name`), '  ', ' '), '  ', ' '), `party` = REPLACE(REPLACE(TRIM(`party`), '  ', ' '), '  ', ' '), `office` = REPLACE(REPLACE(TRIM(`office`), '  ', ' '), '  ', ' ')");
+        $db->query();
+
+        array_push($t, array('msg'=>'transform complete', 'time'=>microtime(1)));
 
         // drop indexes for import
         $deindex = <<<_DEINDEX
 ALTER TABLE `#__rt_cold_data` DISABLE KEYS
 _DEINDEX;
-
-        $db->setQuery($deindex);
+        
+        $db->setQuery($delindex);
         $db->query();
-
-        array_push($t, array('msg'=>'disabled cd keys', 'time'=>microtime(1)));
-
+        
         $populate = <<<_POPULATE
-INSERT INTO `#__rt_cold_data` ($coldDataFields , `e_year`, `data_created`) SELECT $outputFields , '$e_year', '$now' FROM `#__rt_imports`
+INSERT INTO `#__rt_cold_data` ($coldDataFields) SELECT $inputFields, '$e_year', '$now' FROM `#__rt_imports`
 _POPULATE;
 
         $db->setQuery($populate);
         $db->query();
 
-        array_push($t, array('msg'=>'finished cd import', 'time'=>microtime(1)));
-
-        // index altogether
+        // drop indexes for import
         $index = <<<_INDEX
-"ALTER TABLE `#_rt_cold_data` ENABLE KEYS"
+ALTER TABLE `#__rt_cold_data` ENABLE KEYS
 _INDEX;
 
         $db->setQuery($index);
         $db->query();
+        
+        array_push($t, array('msg'=>'finished cold_data transfer', 'time'=>microtime(1)));
 
-        array_push($t, array('msg'=>'enabled cd keys', 'time'=>microtime(1)));
+        // save a backup
+        JFile::move($dest, $outputFile);
 
-        // open our file-for-download
-        $handle    = fopen($outputFile, 'w');
-
-        // write a header for the file-for-download
-        fputcsv($handle, $outputHeader);
-
-        $backup = <<<_BACKUP
-SELECT $outputFields FROM `#__rt_imports
-_BACKUP;
-
-        $db->setQuery($backup);
-
-        // Output one line until end-of-file
-        while (($line = $db->loadRow()) !== false) {
-            array_push($t, array('msg'=>'disabled cd keys', 'time'=>microtime(1)));
-            fclose($handle);
-            foreach ($t as $arr) {
-                if ($last) {
-                    d($arr['msg'], $arr['time'] - $last['time']);
-                } else {
-                    d($arr['msg'], 0);
-                }
-                $last = $arr;
+        array_push($t, array('msg'=>'finished copying backup', 'time'=>microtime(1)));
+        foreach ($t as $arr) {
+            if ($last) {
+                d($arr['msg'], $arr['time'] - $last['time']);
+            } else {
+                d($arr['msg'], 0);
             }
-            dd($import, $importReturn, $line, 'break');
-            fputcsv($handle, $line);
+            $last = $arr;
         }
-
-        // done writing file-for-download
-        fclose($handle);
-
-        // we're finished, drop the import table
-        $drop = <<<_DROP
-DROP TABLE IF EXISTS `#__rt_imports`
-_DROP;
-
-        $db->setQuery($drop);
-        $db->query();
 
         if ($e_year) {
             try {
