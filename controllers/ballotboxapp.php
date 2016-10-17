@@ -102,33 +102,38 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
     {
         JRequest::checkToken() or jexit('Invalid Token');
 
+        jimport('kint.kint');
+        $t=array();
+        array_push($t, array('msg'=>'start', 'time'=>microtime(1)));
+
         $post  = JRequest::get('post');
         $files = JRequest::get('files');
 
         // having timeout issues 2015.11.17
         ini_set('max_execution_time', 360);
+        $baseLink = 'index.php?option=com_ballotboxapp';
         $e_year         = JRequest::getVar('e_year');
-        $exclude_header = isset($post['header']) ? true : false;
-        $move_file      = strtolower(str_replace(' ', '_', $e_year));
-        $move_file      = preg_replace('/[^A-Za-z0-9\-]/', '_', $move_file) . '.csv';
+        $excludeHeader = isset($post['header']) ? true : false;
+        $newFileName      = strtolower(str_replace(' ', '_', $e_year));
+        $newFileName      = preg_replace('/[^A-Za-z0-9\-]/', '_', $newFileName) . '.csv';
         $model          = $this->getModel('ballotboxapp');
-        $insertStart    = 'INSERT into #__rt_cold_data (`office`,`ward`,`division`,`vote_type`,`name`,`party`,`votes`,`e_year`,`date_created`) VALUES ';
-
-        $oldFileName = $files['results_file']['name'];
-
+        $oldFileName = $files['fileToUpload']['name'];
         $uploads = JPATH_COMPONENT . DS . 'uploads';
-        $src     = $files['results_file']['tmp_name'];
+        $src     = $files['fileToUpload']['tmp_name'];
         $dest    = $uploads . DS . $oldFileName;
 
         // Run the move_uploaded_file() function here
         $moveResult = move_uploaded_file($src, $dest);
         // Evaluate the value returned from the function if needed
         if (!$moveResult) {
+            dd($e_year, $excludeHeader, $oldFileName, $newFileName, $uploads, $src, $dest, $post, $files);
             // echo "ERROR: File not moved correctly";
-            $link = 'index.php?option=com_ballotboxapp';
             $msg .= JText::_('ERROR: File not moved correctly');
-            return $this->setRedirect($link, $msg);
+            return $this->setRedirect($baseLink, $msg);
         }
+
+        array_push($t, array('msg'=>'file moved', 'time'=>microtime(1)));
+
         $path_parts = pathinfo($dest);
         // if this is one of the extensions JArchive handles, lets extract it
         if (in_array($path_parts['extension'], array('zip', 'tar', 'tgz', 'gz', 'gzip', 'bz2', 'bzip2', 'tbz2'))) {
@@ -146,10 +151,12 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
             if ($path_parts['extension'] === 'zip') {
                 $dest = $uploads . DS . $path_parts['filename'] . ".txt";
             }
-            jimport('joomla.fiesystem.file');
-            JFile::move($dest, $uploads . DS . "jos_pv_live_imports.txt");
-            $dest = $uploads . DS . "jos_pv_live_imports.txt";
         }
+
+        // we need a specific filename for import
+        jimport('joomla.fiesystem.file');
+        JFile::move($dest, $uploads . DS . "jos_rt_imports.txt");
+        $dest = $uploads . DS . "jos_rt_imports.txt";
 
         if (!$inputFile = fopen($dest, 'r')) {
             return $this->setRedirect($baseLink, 'unable to open file!');
@@ -174,6 +181,8 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
         }
         fclose($inputFile);
 
+        array_push($t, array('msg'=>'delim set to: ' . $delim, 'time'=>microtime(1)));
+
         $ignore = "0";
         if ($excludeHeader) {
             $ignore = "1";
@@ -196,9 +205,24 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
         }
 
         $date = &JFactory::getDate();
-        $now = $dateNow->toMySQL();
+        $now = $date->toMySQL();
 
         $db = &JFactory::getDBO();
+
+        // we're finished, drop the import table
+        $drop = <<<_DROP
+DROP TABLE `#__rt_imports`
+_DROP;
+
+        $db->setQuery($drop);
+        $db->query();
+
+        $truncate = <<<_TRUNCATE
+TRUNCATE TABLE IF EXISTS `#__rt_imports`
+_TRUNCATE;
+
+//        $db->setQuery($truncate);
+//        $db->query();
 
         // Let's pull our creds from the site config
         $config = JFactory::getConfig();
@@ -227,14 +251,17 @@ CREATE TABLE IF NOT EXISTS `#__rt_imports` (
 , INDEX `division_imports` (`division`)
 , INDEX `ward_division_imports` (`ward`,`division`)
 , INDEX `candidate_imports` (`candidate`)
-, INDEX `office_imports` (`candidate`)
+, INDEX `office_imports` (`office`)
 , INDEX `party_imports` (`party`)
 , INDEX `votes_imports` (`votes`)
-) ENGINE=ARIA COLLATE='utf8_general_ci';
+) ENGINE=MYSQL COLLATE='utf8_general_ci';
 _CREATE;
 
         $db->setQuery($create);
         $db->query();
+
+        //sleep(10);
+        //array_push($t, array('msg'=>'table created', 'time'=>microtime(1)));
 
         // drop indexes for import
         $deindex = <<<_DEINDEX
@@ -247,25 +274,28 @@ _DEINDEX;
         // import all together
         $import = <<<_IMPORT
 mysqlimport \
---local \
---compress \
---user=$user \
---password=$pass \
---host=$host \
---ignore-lines=$ignore \
---fields-terminated-by='$delim' \
---fields-optionally-enclosed-by='"' \
---columns='$sFields' \
-$dbName \
-$dest
+    --verbose \
+    --debug \
+    --local \
+    --compress \
+    --user=$user \
+    --password=$pass \
+    --host=$host \
+    --ignore-lines=$ignore \
+    --fields-terminated-by='$delim' \
+    --fields-optionally-enclosed-by='"' \
+    --columns='$sFields' \
+    $dbName \
+    $dest;
 _IMPORT;
-
-        $importReturn = @system($import);
+        $importReturn = system($import);
 
         // index altogether
         $index = <<<_INDEX
 "ALTER TABLE `#_rt_imports` ENABLE KEYS"
 _INDEX;
+
+        array_push($t, array('msg'=>'file imported', 'time'=>microtime(1)));
 
         $db->setQuery($index);
         $db->query();
@@ -278,6 +308,8 @@ _INDEX;
             // improve our candidates where possible
             $db->setQuery("UPDATE `#__rt_imports` SET `candidate` = REPLACE(CONCAT_WS(' ', `fname`, `mname`, `lname`), '  ', ' ') WHERE `lname` IS NOT NULL AND `lname` != '' ");
             $db->query();
+
+            array_push($t, array('msg'=>'file transformed', 'time'=>microtime(1)));
         }
 
         // drop indexes for import
@@ -288,12 +320,16 @@ _DEINDEX;
         $db->setQuery($deindex);
         $db->query();
 
+        array_push($t, array('msg'=>'disabled cd keys', 'time'=>microtime(1)));
+
         $populate = <<<_POPULATE
 INSERT INTO `#__rt_cold_data` ($coldDataFields , `e_year`, `data_created`) SELECT $outputFields , '$e_year', '$now' FROM `#__rt_imports`
 _POPULATE;
 
         $db->setQuery($populate);
         $db->query();
+
+        array_push($t, array('msg'=>'finished cd import', 'time'=>microtime(1)));
 
         // index altogether
         $index = <<<_INDEX
@@ -303,11 +339,13 @@ _INDEX;
         $db->setQuery($index);
         $db->query();
 
+        array_push($t, array('msg'=>'enabled cd keys', 'time'=>microtime(1)));
+
         // open our file-for-download
         $handle    = fopen($outputFile, 'w');
 
         // write a header for the file-for-download
-        fputscsv($handle, $outputHeader);
+        fputcsv($handle, $outputHeader);
 
         $backup = <<<_BACKUP
 SELECT $outputFields FROM `#__rt_imports
@@ -317,6 +355,17 @@ _BACKUP;
 
         // Output one line until end-of-file
         while (($line = $db->loadRow()) !== false) {
+            array_push($t, array('msg'=>'disabled cd keys', 'time'=>microtime(1)));
+            fclose($handle);
+            foreach ($t as $arr) {
+                if ($last) {
+                    d($arr['msg'], $arr['time'] - $last['time']);
+                } else {
+                    d($arr['msg'], 0);
+                }
+                $last = $arr;
+            }
+            dd($import, $importReturn, $line, 'break');
             fputcsv($handle, $line);
         }
 
