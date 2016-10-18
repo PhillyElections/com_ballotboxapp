@@ -289,6 +289,7 @@ mysqlimport \
     $dbName \
     $dest;
 _IMPORT;
+
         $importReturn = system($import);
 
         // index altogether
@@ -346,7 +347,7 @@ _INDEX;
         JFile::move($dest, $outputFile);
 
         array_push($t, array('msg'=>'finished copying backup', 'time'=>microtime(1)));
-        foreach ($t as $arr) {
+/*        foreach ($t as $arr) {
             if ($last) {
                 d($arr['msg'], $arr['time'] - $last['time']);
             } else {
@@ -354,7 +355,7 @@ _INDEX;
             }
             $last = $arr;
         }
-
+*/
         if ($e_year) {
             try {
                 $year_id = $model->insert_year($e_year);
