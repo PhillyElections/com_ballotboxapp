@@ -127,7 +127,6 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
         $moveResult = move_uploaded_file($src, $dest);
         // Evaluate the value returned from the function if needed
         if (!$moveResult) {
-            dd($e_year, $excludeHeader, $oldFileName, $newFileName, $uploads, $src, $dest, $post, $files);
             // echo "ERROR: File not moved correctly";
             $msg .= JText::_('ERROR: File not moved correctly');
             return $this->setRedirect($baseLink, $msg);
@@ -142,7 +141,7 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
             jimport('joomla.filesystem.archive');
 
             // when unzipping a 50MB text file, you take up a crapload of memory
-            $extracted = JArchive::extract($dest, $path_parts['dirname']);
+            JArchive::extract($dest, $path_parts['dirname']);
 
             // drop the archive now
             @unlink($dest);
