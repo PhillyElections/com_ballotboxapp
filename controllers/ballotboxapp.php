@@ -257,9 +257,7 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
         $db = &JFactory::getDBO();
 
         // drop the import table
-        $drop = <<<_DROP
-DROP TABLE `#__rt_imports`
-_DROP;
+        $drop = "DROP TABLE `#__rt_imports`";
 
         $db->setQuery($drop);
         $db->query();
@@ -286,9 +284,7 @@ _DROP;
         //array_push($t, array('msg'=>'table created', 'time'=>microtime(1)));
 
         // drop indexes for import
-        $deindex = <<<_DEINDEX
-ALTER TABLE `#__rt_imports` DISABLE KEYS
-_DEINDEX;
+        $deindex = "ALTER TABLE `#__rt_imports` DISABLE KEYS";
 
         $db->setQuery($deindex);
         $db->query();
@@ -314,9 +310,7 @@ _IMPORT;
         $importReturn = system($import);
 
         // index altogether
-        $index = <<<_INDEX
-ALTER TABLE `#_rt_imports` ENABLE KEYS
-_INDEX;
+        $index = "ALTER TABLE `#_rt_imports` ENABLE KEYS";
 
         $db->setQuery($index);
         $db->query();
@@ -343,24 +337,18 @@ _INDEX;
         array_push($t, array('msg'=>'transform complete', 'time'=>microtime(1)));
 
         // drop indexes for import
-        $deindex = <<<_DEINDEX
-ALTER TABLE `#__rt_cold_data` DISABLE KEYS
-_DEINDEX;
+        $deindex = "ALTER TABLE `#__rt_cold_data` DISABLE KEYS";
         
         $db->setQuery($delindex);
         $db->query();
         
-        $populate = <<<_POPULATE
-INSERT INTO `#__rt_cold_data` ($coldDataFields) SELECT $inputFields, '$e_year', '$now' FROM `#__rt_imports`
-_POPULATE;
+        $populate = "INSERT INTO `#__rt_cold_data` ($coldDataFields) SELECT $inputFields, '$e_year', '$now' FROM `#__rt_imports`";
 
         $db->setQuery($populate);
         $db->query();
 
         // drop indexes for import
-        $index = <<<_INDEX
-ALTER TABLE `#__rt_cold_data` ENABLE KEYS
-_INDEX;
+        $index = "ALTER TABLE `#__rt_cold_data` ENABLE KEYS";
 
         $db->setQuery($index);
         $db->query();
