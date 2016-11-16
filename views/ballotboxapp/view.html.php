@@ -29,7 +29,7 @@ class BallotboxappsViewBallotboxapp extends JView
 	{
 
 		//get the election
-		$election		=& $this->get('Data');
+		$election	=& $this->get('Data');
 		$isNew		= ($election[0][0]->id < 1);
 
 		$text = $isNew ? JText::_( 'New' ) : JText::_( 'Edit' );
@@ -42,7 +42,7 @@ class BallotboxappsViewBallotboxapp extends JView
 			// for existing items the button is renamed `close`
 			JToolBarHelper::publish();
 			JToolBarHelper::unpublish();
-			JToolBarHelper::save('save_step2', 'Save');
+			JToolBarHelper::save('saveStep2', 'Save');
 			JToolBarHelper::cancel( 'cancel', 'Close' );
 			
 		}
