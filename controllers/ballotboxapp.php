@@ -183,10 +183,10 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
 
         array_push($t, array('msg'=>'delim set to: ' . $delim, 'time'=>microtime(1)));
 
-        $ignore = "0";
+        $ignore = "";
         if ($excludeHeader) {
-            $ignore = "1";
-            // $ignore = "    IGNORE 1 LINES \n";
+            //$ignore = "1";
+            $ignore = " IGNORE 1 LINES";
         }
 
         $coldDataFields = " `ward`, `division`, `vote_type`, `office`, `name`, `party`, `votes`, `e_year`, `date_created` ";
@@ -209,7 +209,7 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
 
         $db = &JFactory::getDBO();
 
-        // we're finished, drop the import table
+        // drop the import table
         $drop = <<<_DROP
 DROP TABLE `#__rt_imports`
 _DROP;
@@ -217,9 +217,9 @@ _DROP;
         $db->setQuery($drop);
         $db->query();
 
-        $truncate = <<<_TRUNCATE
-TRUNCATE TABLE IF EXISTS `#__rt_imports`
-_TRUNCATE;
+//        $truncate = <<<_TRUNCATE
+//TRUNCATE TABLE IF EXISTS `#__rt_imports`
+//_TRUNCATE;
 
 //        $db->setQuery($truncate);
 //        $db->query();
@@ -273,7 +273,9 @@ _DEINDEX;
 
         // import all together
         $import = <<<_IMPORT
-mysqlimport \
+mysql --user=$user --password=$pass $dbName --execute="LOAD DATA LOCAL INFILE '$dest' INTO TABLE jos_rt_imports FIELDS TERMINATED BY '$delim' OPTIONALLY ENCLOSED BY '\"' $ignore ($sFields) ;"
+_IMPORT;
+/*mysqlimport \
     --verbose \
     --debug \
     --local \
@@ -286,9 +288,7 @@ mysqlimport \
     --fields-optionally-enclosed-by='"' \
     --columns='$sFields' \
     $dbName \
-    $dest;
-_IMPORT;
-
+    $dest*/
         $importReturn = system($import);
 
         // index altogether
@@ -355,18 +355,8 @@ _INDEX;
             $last = $arr;
         }
 */
-        if ($e_year) {
-            try {
-                $year_id = $model->insert_year($e_year);
-            } catch (Exception $e) {
-                sd($e, $model, $e_year);
-            }
-            try {
-                $office = $model->insert_office($e_year, $year_id);
-            } catch (Exception $e) {
-                sd($e, $model, $e_year);
-            }
-        }
+        $year_id = $model->insert_year($e_year);
+        $office = $model->insert_office($e_year, $year_id);
 
         $msg .= JText::_('Data Saved');
         $link = 'index.php?option=com_ballotboxapp&controller=ballotboxapp&task=edit&cid[]=' . $year_id;
