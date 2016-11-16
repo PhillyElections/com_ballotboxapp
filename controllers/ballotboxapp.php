@@ -165,6 +165,7 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
         $storagePath = JPATH_SITE . DS . 'files' . DS . 'raw-data';
         $outputFile  = $storagePath . DS . $newFileName;
 
+        system("sed -i 's/\r$//g' '$dest'");
         // default
         // 7 column import
         // [0]ward    [1]division    [2]type    [3]office  [4]name   [5]party   [6]votes
@@ -184,9 +185,10 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
         array_push($t, array('msg'=>'delim set to: ' . $delim, 'time'=>microtime(1)));
 
         $ignore = "";
+        // we're just going to drop all rows without ward data
         if ($excludeHeader) {
             //$ignore = "1";
-            $ignore = " IGNORE 1 LINES";
+            //$ignore = " IGNORE 1 LINES";
         }
 
         $coldDataFields = " `ward`, `division`, `vote_type`, `office`, `name`, `party`, `votes`, `e_year`, `date_created` ";
@@ -195,12 +197,57 @@ class BallotboxappsControllerBallotboxapp extends BallotboxappsController
 
         switch ($delim) {
             case "@":
-                $sFields = "ward_division,office,name,votes,lname,fname,mname,party";
+                $sFields = "ward_division,office,name,votes,lname,fname,mname,@var";
                 $fields  = " (ward_division, office, name, votes, lname, fname, mname, party) ";
+                $lField = 'party';
+                $create = "
+                CREATE TABLE IF NOT EXISTS `#__rt_imports` (
+                  `id` int(11) unsigned NOT NULL AUTO_INCREMENT
+                , `ward` smallint(5) NOT NULL
+                , `division` smallint(5) NOT NULL
+                , `type` char(1) NOT NULL
+                , `office` varchar(255) NOT NULL
+                , `name` varchar(255) NOT NULL
+                , `party` varchar(255) NOT NULL
+                , `votes` int(11) NOT NULL
+                , `ward_division` varchar(255) NOT NULL
+                , `lname` varchar(255) NOT NULL
+                , `fname` varchar(255) NOT NULL
+                , `mname` varchar(255) NOT NULL
+                , PRIMARY KEY (`id`)
+                , INDEX `ward_imports` (`ward`)
+                , INDEX `division_imports` (`division`)
+                , INDEX `ward_division_imports` (`ward`,`division`)
+                , INDEX `name_imports` (`name`)
+                , INDEX `office_imports` (`office`)
+                , INDEX `party_imports` (`party`)
+                , INDEX `votes_imports` (`votes`)
+                ) ENGINE=MYISAM COLLATE='utf8_general_ci';";
+
                 break;
             default:
-                $sFields = "ward,division,type,office,name,party,votes";
+                $sFields = "ward,division,type,office,name,party,@var";
                 $fields  = " (ward, division, type, office, name, party, votes) ";
+                $lField = 'votes';
+                $create = "
+                CREATE TABLE IF NOT EXISTS `#__rt_imports` (
+                  `id` int(11) unsigned NOT NULL AUTO_INCREMENT
+                , `ward` smallint(5) NOT NULL
+                , `division` smallint(5) NOT NULL
+                , `type` char(1) NOT NULL
+                , `office` varchar(255) NOT NULL
+                , `name` varchar(255) NOT NULL
+                , `party` varchar(255) NOT NULL
+                , `votes` int(11) NOT NULL
+                , PRIMARY KEY (`id`)
+                , INDEX `ward_imports` (`ward`)
+                , INDEX `division_imports` (`division`)
+                , INDEX `name_imports` (`name`)
+                , INDEX `office_imports` (`office`)
+                , INDEX `party_imports` (`party`)
+                , INDEX `votes_imports` (`votes`)
+                ) ENGINE=MYISAM COLLATE='utf8_general_ci';";
+
                 break;
         }
 
@@ -231,31 +278,6 @@ _DROP;
         $pass   = $config->getValue('config.password');
         $dbName = $config->getValue('config.db');
 
-        // create temportary table
-        $create = <<<_CREATE
-CREATE TABLE IF NOT EXISTS `#__rt_imports` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT
-, `ward` smallint(5) NOT NULL
-, `division` smallint(5) NOT NULL
-, `type` char(1) NOT NULL
-, `office` varchar(255) NOT NULL
-, `name` varchar(255) NOT NULL
-, `party` varchar(255) NOT NULL
-, `votes` int(11) NOT NULL
-, `ward_division` varchar(255) NOT NULL
-, `lname` varchar(255) NOT NULL
-, `fname` varchar(255) NOT NULL
-, `mname` varchar(255) NOT NULL
-, PRIMARY KEY (`id`)
-, INDEX `ward_imports` (`ward`)
-, INDEX `division_imports` (`division`)
-, INDEX `ward_division_imports` (`ward`,`division`)
-, INDEX `name_imports` (`name`)
-, INDEX `office_imports` (`office`)
-, INDEX `party_imports` (`party`)
-, INDEX `votes_imports` (`votes`)
-) ENGINE=MYISAM COLLATE='utf8_general_ci';
-_CREATE;
 
         $db->setQuery($create);
         $db->query();
@@ -273,7 +295,7 @@ _DEINDEX;
 
         // import all together
         $import = <<<_IMPORT
-mysql --user=$user --password=$pass $dbName --execute="LOAD DATA LOCAL INFILE '$dest' INTO TABLE jos_rt_imports FIELDS TERMINATED BY '$delim' OPTIONALLY ENCLOSED BY '\"' $ignore ($sFields) ;"
+mysql --user=$user --password=$pass $dbName --execute="LOAD DATA LOCAL INFILE '$dest' INTO TABLE jos_rt_imports FIELDS TERMINATED BY '$delim' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\n' $ignore ($sFields) SET $lField = TRIM(TRAILING '\r' FROM @var);"
 _IMPORT;
 /*mysqlimport \
     --verbose \
@@ -311,6 +333,9 @@ _INDEX;
             $db->query();
         }
 
+        $db->setQuery("DELETE FROM `#__rt_imports` WHERE ward=0 and division=0");
+        $db->query();
+
         // we have the target fields, but they may contain some garbage
         $db->setQuery("UPDATE `#__rt_imports` SET `name` = REPLACE(REPLACE(TRIM(`name`), '  ', ' '), '  ', ' '), `party` = REPLACE(REPLACE(TRIM(`party`), '  ', ' '), '  ', ' '), `office` = REPLACE(REPLACE(TRIM(`office`), '  ', ' '), '  ', ' ')");
         $db->query();
@@ -346,15 +371,7 @@ _INDEX;
         JFile::move($dest, $outputFile);
 
         array_push($t, array('msg'=>'finished copying backup', 'time'=>microtime(1)));
-/*        foreach ($t as $arr) {
-            if ($last) {
-                d($arr['msg'], $arr['time'] - $last['time']);
-            } else {
-                d($arr['msg'], 0);
-            }
-            $last = $arr;
-        }
-*/
+
         $year_id = $model->insert_year($e_year);
         $office = $model->insert_office($e_year, $year_id);
 
