@@ -184,7 +184,7 @@ class BallotboxappsModelBallotboxapp extends JModel
             $str = "('" . implode("', '", $ids) . "')";
             $tables = array("candidate" , "ward" , "division");
             foreach ($tables as $index => $value) {
-                $del_query = "DELETE FROM #__rt_" . $value . " where office_id in " . $str ;
+                $del_query = "DELETE FROM `#__rt_" . $value . "` where `office_id` in " . $str ;
                 $db->setQuery($del_query);
                 $db->query();
             }
@@ -195,7 +195,7 @@ class BallotboxappsModelBallotboxapp extends JModel
     public function update_office($order, $id)
     {
         $db = &JFactory::getDBO();
-        $query = "UPDATE #__rt_offices set publish_order = '" . $order . "' , date_modified=NOW() where deleted=0 and id='" . $id . "'";
+        $query = "UPDATE `#__rt_offices` set `publish_order` = '" . $order . "' , `date_modified`=NOW() where `deleted`=0 and `id`='" . $id . "'";
         $db->setQuery($query);
         $db->query();
     }
